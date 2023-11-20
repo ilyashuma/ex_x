@@ -14,7 +14,9 @@ defmodule ExX.Api.Base do
     req_body = body(body, opts)
     headers = headers(opts)
 
-    HTTPoison.post(api_url() <> endpoint, req_body, headers)
+    (api_url() <> endpoint)
+    |> HTTPoison.post(req_body, headers)
+    |> parse_response()
   end
 
   def get(endpoint, params \\ nil, opts \\ %{}) do
@@ -24,7 +26,9 @@ defmodule ExX.Api.Base do
       if params,
         do: "?" <> URI.encode_query(params)
 
-    HTTPoison.get(api_url() <> endpoint <> params, headers)
+    (api_url() <> endpoint <> params)
+    |> HTTPoison.get(headers)
+    |> parse_response()
   end
 
   defp body(body, %{access_token: _}), do: Jason.encode!(body)
@@ -41,4 +45,10 @@ defmodule ExX.Api.Base do
       "Authorization" => "Basic #{auth_header}"
     }
   end
+
+  defp parse_response({:ok, %HTTPoison.Response{status_code: 200, body: body}}),
+    do: {:ok, Jason.decode!(body)}
+
+  defp parse_response({:ok, %HTTPoison.Response{status_code: status_code, body: body}}),
+    do: {:error, status_code, Jason.decode!(body)}
 end
