@@ -19,14 +19,10 @@ defmodule ExX.Api.Base do
     |> parse_response()
   end
 
-  def get(endpoint, params \\ nil, opts \\ %{}) do
+  def get(endpoint, opts) do
     headers = headers(opts)
 
-    params =
-      if params,
-        do: "?" <> URI.encode_query(params)
-
-    (api_url() <> endpoint <> params)
+    (api_url() <> endpoint)
     |> HTTPoison.get(headers)
     |> parse_response()
   end
@@ -46,9 +42,11 @@ defmodule ExX.Api.Base do
     }
   end
 
-  defp parse_response({:ok, %HTTPoison.Response{status_code: 200, body: body}}),
-    do: {:ok, Jason.decode!(body)}
+  defp parse_response({:ok, %HTTPoison.Response{status_code: status_code, body: body}})
+       when status_code in [200, 201],
+       do: {:ok, Jason.decode!(body)}
 
-  defp parse_response({:ok, %HTTPoison.Response{status_code: status_code, body: body}}),
-    do: {:error, status_code, Jason.decode!(body)}
+  defp parse_response({:ok, %HTTPoison.Response{status_code: status_code, body: body} = resp}) do
+    {:error, status_code, Jason.decode!(body)}
+  end
 end

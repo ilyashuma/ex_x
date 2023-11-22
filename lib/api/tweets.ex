@@ -3,9 +3,14 @@ defmodule ExX.Api.Tweets do
 
   import ExX.Api.Base
 
-  def tweet(text, %{access_token: access_token}) do
+  def tweet(text, %{access_token: access_token} = opts) do
     body = %{"text" => text}
-    opts = %{access_token: access_token}
+
+    body =
+      case opts[:in_reply_to_status_id] do
+        nil -> body
+        tweet_id -> Map.merge(body, %{"reply" => %{"in_reply_to_tweet_id" => tweet_id}})
+      end
 
     post("/2/tweets", body, opts)
   end
